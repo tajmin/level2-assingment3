@@ -20,6 +20,7 @@ A RESTful API built with **Express**, **TypeScript**, **MongoDB** (via Mongoose)
 
 - [Error Response](##error-response)
 - [Deployment](#-deployment)
+- [Setup](#-setup)
 
 ## Overview
 
@@ -321,3 +322,15 @@ You can use this URL as the base for all routes, such as:
 > ⚠️ Note: Make sure to use tools like **Postman**, to interact with the API, since it doesn't serve a frontend.
 
 ---
+
+## Setup
+
+Setup is pretty straight forward. Open a terminal and execute the following commands:
+
+```json
+
+git clone git@github.com:tajmin/level2-assingment3.git
+cd librarylevel2-assingment3
+npm install
+
+```
