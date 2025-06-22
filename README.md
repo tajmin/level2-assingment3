@@ -18,6 +18,7 @@ A RESTful API built with **Express**, **TypeScript**, **MongoDB** (via Mongoose)
     - [POST /api/borrow](#post-apiborrow)
     - [GET /api/borrow](#get-apiborrow)
 
+- [Error Response](##error-response)
 - [Deployment](#-deployment)
 
 ## Overview
@@ -275,6 +276,31 @@ Return a summary of borrowed books, including:
   ]
 }
 ```
+
+---
+
+## Error Response
+
+For error handling, a global error handling feture is developed and leveraged in the form of a middleware. Typical error response format looks like this:
+
+```json
+{
+  "message": "Error message",
+  "success": false,
+  "error": {
+    "statusCode": 400,
+    "details": {}
+  }
+}
+```
+
+**Common Errors:**
+
+- `400 Bad Request:` Invalid input
+
+- `404 Not Found:` Resource not found
+
+- `500 Internal Server Error:` Server issues
 
 ---
 
