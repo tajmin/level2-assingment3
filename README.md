@@ -327,10 +327,10 @@ You can use this URL as the base for all routes, such as:
 
 Setup is pretty straight forward. Open a terminal and execute the following commands:
 
-```json
+```bash
 
-git clone git@github.com:tajmin/level2-assingment3.git
-cd librarylevel2-assingment3
-npm install
+  git clone git@github.com:tajmin/level2-assingment3.git
+  cd librarylevel2-assingment3
+  npm install
 
 ```
