@@ -119,7 +119,7 @@ bookRoutes.delete("/:bookId", async (req: Request, res: Response) => {
     res.status(201).json({
       success: true,
       message: "Book deleted successfully",
-      data: book,
+      data: null,
     });
   } catch (error) {
     console.log(error);
@@ -128,7 +128,7 @@ bookRoutes.delete("/:bookId", async (req: Request, res: Response) => {
 
 /**
  * Update book
- * method: PATCH
+ * method: PUT
  */
 bookRoutes.put("/:bookId", async (req: Request, res: Response) => {
   try {
