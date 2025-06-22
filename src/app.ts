@@ -1,7 +1,7 @@
 import express, { Application, NextFunction, Request, Response } from "express";
 import { bookRoutes } from "./app/controllers/books.controller";
 import { borrowRoutes } from "./app/controllers/borrows.controller";
-import { errorMiddleware } from "./app/middleware/errors.middleware";
+import { errorMiddleware } from "./app/middlewares/errors.middleware";
 
 const app: Application = express();
 
