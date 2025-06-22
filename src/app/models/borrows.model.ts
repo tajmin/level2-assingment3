@@ -1,6 +1,7 @@
 import { model, Schema } from "mongoose";
 import { IBorrow } from "../interfaces/borrows.interface";
 import { BookModel } from "./books.model";
+import { createError } from "../utils/error.utils";
 
 const borrowSchema = new Schema<IBorrow>(
   {
@@ -11,12 +12,12 @@ const borrowSchema = new Schema<IBorrow>(
     },
     quantity: {
       type: Number,
-      required: [true, "Quanitity is a required field"],
-      min: [1, "Quantity must be a positive number"],
+      required: true,
+      min: 1,
     },
     dueDate: {
       type: Date,
-      required: [true, "Due date is required"],
+      required: true,
       validate: {
         validator: function (this: IBorrow, date: Date) {
           return date > new Date();
@@ -33,12 +34,10 @@ const borrowSchema = new Schema<IBorrow>(
 
 borrowSchema.pre("save", async function (next) {
   const book = await BookModel.findById(this.book);
-  if (!book) {
-    throw new Error("Book not found");
-  }
+  if (!book) throw createError(404, "Book not found");
 
   if (book.copies < this.quantity) {
-    throw new Error("Not enough copies available");
+    throw createError(400, `Only ${book.copies} copies available`);
   }
 
   book.copies -= this.quantity;

@@ -1,8 +1,9 @@
-import express, { Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import { Types } from "mongoose";
 import { z } from "zod";
 import { BorrowModel } from "../models/borrows.model";
 import { BookModel } from "../models/books.model";
+import { createError } from "../utils/error.utils";
 
 export const borrowRoutes = express.Router();
 
@@ -12,7 +13,7 @@ export const CreateBorrowZodSchema = z.object({
   }),
   quantity: z
     .number()
-    .int("Quantity must be an integer")
+    .int("Quantity must be an number")
     .positive("Quantity must be at least 1"),
   dueDate: z
     .string()
@@ -25,63 +26,72 @@ export const CreateBorrowZodSchema = z.object({
     }),
 });
 
-borrowRoutes.post("/", async (req: Request, res: Response) => {
-  try {
-    const validatedData = CreateBorrowZodSchema.parse(req.body);
-    const borrow = await BorrowModel.create(validatedData);
-    await BookModel.updateAvailability(borrow.book);
+borrowRoutes.post(
+  "/",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validatedData = CreateBorrowZodSchema.parse(req.body);
+      const borrow = await BorrowModel.create(validatedData);
+      await BookModel.updateAvailability(borrow.book);
 
-    res.status(201).json({
-      succcess: true,
-      message: "Book borrowed successfully",
-      data: borrow,
-    });
-  } catch (error) {
-    console.log(error);
+      res.status(201).json({
+        succcess: true,
+        message: "Book borrowed successfully",
+        data: borrow,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return next(createError(400, "Validation failed", error.errors));
+      }
+      next(error);
+    }
   }
-});
+);
 
-borrowRoutes.get("/", async (req: Request, res: Response) => {
-  try {
-    const borrowSummary = await BorrowModel.aggregate([
-      {
-        $lookup: {
-          from: "books",
-          localField: "book",
-          foreignField: "_id",
-          as: "bookDetails",
+borrowRoutes.get(
+  "/",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const borrowSummary = await BorrowModel.aggregate([
+        {
+          $lookup: {
+            from: "books",
+            localField: "book",
+            foreignField: "_id",
+            as: "bookDetails",
+          },
         },
-      },
-      {
-        $unwind: "$bookDetails",
-      },
-      {
-        $group: {
-          _id: "$book",
-          totalQuantity: { $sum: "$quantity" },
-          book: {
-            $first: {
-              title: "$bookDetails.title",
-              isbn: "$bookDetails.isbn",
+        {
+          $unwind: "$bookDetails",
+        },
+        {
+          $group: {
+            _id: "$book",
+            totalQuantity: { $sum: "$quantity" },
+            book: {
+              $first: {
+                title: "$bookDetails.title",
+                isbn: "$bookDetails.isbn",
+              },
             },
           },
         },
-      },
-      {
-        $project: {
-          _id: 0,
-          book: 1,
-          totalQuantity: 1,
+        {
+          $project: {
+            _id: 0,
+            book: 1,
+            totalQuantity: 1,
+          },
         },
-      },
-    ]);
+      ]);
 
-    res.status(200).json({
-      success: true,
-      message: "Borrowed books summary retrieved successfully",
-      data: borrowSummary,
-    });
-  } catch (error) {
-    console.log(error);
+      res.status(200).json({
+        success: true,
+        message: "Borrowed books summary retrieved successfully",
+        data: borrowSummary,
+      });
+    } catch (error) {
+      next(error);
+    }
   }
-});
+);

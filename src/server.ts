@@ -11,7 +11,6 @@ async function main() {
     await mongoose.connect(
       "mongodb+srv://dbadmin:dbadmin@cluster0.7xlcz.mongodb.net/librarydb?retryWrites=true&w=majority&appName=Cluster0"
     );
-    console.log("Connected to MongoDB Using Mongoose!!");
     server = app.listen(PORT, () => {
       console.log(`on port ${PORT}`);
     });

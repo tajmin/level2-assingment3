@@ -1,8 +1,9 @@
-import express, { Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
+import { Types } from "mongoose";
 import { z } from "zod";
 import { Genre } from "../interfaces/books.interface";
 import { BookModel } from "../models/books.model";
-import { Types } from "mongoose";
+import { createError } from "../utils/error.utils";
 
 export const bookRoutes = express.Router();
 
@@ -21,30 +22,28 @@ export const CreateBookZodSchema = z.object({
   available: z.boolean().optional().default(true),
 });
 
-/**
- * Create book
- * method: POST
- */
-bookRoutes.post("/", async (req: Request, res: Response) => {
-  try {
-    const validatedData = CreateBookZodSchema.parse(req.body);
-    const book = await BookModel.create(validatedData);
+bookRoutes.post(
+  "/",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validatedData = CreateBookZodSchema.parse(req.body);
+      const book = await BookModel.create(validatedData);
 
-    res.status(201).json({
-      succcess: true,
-      message: "Book created successfully",
-      data: book,
-    });
-  } catch (error) {
-    console.log(error);
+      res.status(201).json({
+        succcess: true,
+        message: "Book created successfully",
+        data: book,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return next(createError(400, "Validation failed", error.errors));
+      }
+      next(error);
+    }
   }
-});
+);
 
-/**
- * Return books
- * method: GET
- */
-bookRoutes.get("/", async (req: Request, res: Response) => {
+bookRoutes.get("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { filter, sortBy, sort, limit } = req.query;
 
@@ -63,86 +62,104 @@ bookRoutes.get("/", async (req: Request, res: Response) => {
       .sort(sortCondition)
       .limit(Number(limit));
 
-    res.status(201).json({
+    res.status(200).json({
       success: true,
       message: "Books retrieved successfully",
       data: books,
     });
   } catch (error) {
-    console.log(error);
+    next(error);
   }
 });
 
-/**
- * Get book
- * method: GET
- */
-bookRoutes.get("/:bookId", async (req: Request, res: Response) => {
-  try {
-    const bookId = req.params.bookId;
+bookRoutes.get(
+  "/:bookId",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const bookId = req.params.bookId;
 
-    // if (!Types.ObjectId.isValid(bookId)) {
-    //   res.status(400).json({
-    //     success: false,
-    //     message: "Invalid book ID format",
-    //   });
-    // }
+      if (!Types.ObjectId.isValid(bookId)) {
+        throw createError(400, "Invalid book ID format");
+      }
 
-    const book = await BookModel.findById(bookId);
+      const book = await BookModel.findById(bookId);
 
-    // if (!book) {
-    //   res.status(404).json({
-    //     success: false,
-    //     message: "Book not found",
-    //   });
-    // }
+      if (!book) {
+        throw createError(404, "Book not found");
+      }
 
-    res.status(200).json({
-      success: true,
-      message: "Book retrieved successfully",
-      data: book,
-    });
-  } catch (error) {
-    console.log(error);
+      res.status(200).json({
+        success: true,
+        message: "Book retrieved successfully",
+        data: book,
+      });
+    } catch (error) {
+      next(error);
+    }
   }
-});
+);
 
-/**
- * Delete book
- * method: DELETE
- */
-bookRoutes.delete("/:bookId", async (req: Request, res: Response) => {
-  try {
-    const bookId = req.params.bookId;
-    const book = await BookModel.findByIdAndDelete(bookId);
+bookRoutes.delete(
+  "/:bookId",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const bookId = req.params.bookId;
 
-    res.status(201).json({
-      success: true,
-      message: "Book deleted successfully",
-      data: null,
-    });
-  } catch (error) {
-    console.log(error);
+      if (!Types.ObjectId.isValid(bookId)) {
+        throw createError(400, "Invalid book ID format");
+      }
+
+      const book = await BookModel.findByIdAndDelete(bookId);
+
+      if (!book) {
+        throw createError(404, "Book not found");
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Book deleted successfully",
+        data: null,
+      });
+    } catch (error) {
+      next(error);
+    }
   }
-});
+);
 
-/**
- * Update book
- * method: PUT
- */
-bookRoutes.put("/:bookId", async (req: Request, res: Response) => {
-  try {
-    const bookId = req.params.bookId;
-    const updatedBody = req.body;
+bookRoutes.put(
+  "/:bookId",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const bookId = req.params.bookId;
+      const updatedBody = req.body;
 
-    const updatedBook = await BookModel.findByIdAndUpdate(bookId, updatedBody, {
-      new: true,
-    });
+      if (!Types.ObjectId.isValid(bookId)) {
+        throw createError(400, "Invalid book ID format");
+      }
 
-    res.status(200).json({
-      success: true,
-      message: "Book updated successfully",
-      data: updatedBook,
-    });
-  } catch (error) {}
-});
+      if (Object.keys(updatedBody).length === 0) {
+        throw createError(400, "No fields to update");
+      }
+
+      const updatedBook = await BookModel.findByIdAndUpdate(
+        bookId,
+        updatedBody,
+        {
+          new: true,
+        }
+      );
+
+      if (!updatedBook) {
+        throw createError(404, "Book not found");
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Book updated successfully",
+        data: updatedBook,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
